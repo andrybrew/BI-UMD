@@ -1,0 +1,149 @@
+---
+title: "Social Network Analysis"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Packages
+install.packages(c("tidyverse", 
+                   "igraph", 
+                   "ggraph", 
+                   "tidygraph", 
+                   "lubridate"))
+```
+
+# Load Packages
+
+```{r}
+# Load Packages
+library(tidyverse)
+library(igraph)
+library(ggraph)
+library(tidygraph)
+library(lubridate)
+```
+
+# Load Data
+
+```{r message=FALSE, warning=FALSE}
+# Load Data
+df <- read_rds("data/tweet_dc.rds")
+```
+
+```{r}
+# Melihat 5 baris pertama data
+head(df, 5)
+```
+
+# Membuat Edge List
+
+```{r}
+# Membuat edge-List mention
+edgelist <- df %>%
+  mutate(created_at = as_date(created_at)) %>%
+  filter(created_at > dmy("25-12-2020")) %>%
+  select(screen_name, mentions_screen_name) %>%
+  unnest(mentions_screen_name) %>%
+  drop_na() %>%
+  rename(source = screen_name, target = mentions_screen_name) %>%
+  select(source, target)
+edgelist
+```
+
+```{r}
+# Melihat 5 baris pertama data
+head(edgelist, 5)
+```
+
+# Membentuk Network
+
+```{r}
+# Membuat network
+g <- graph_from_data_frame(edgelist, directed = FALSE)
+```
+
+# Properti Network
+
+```{r}
+# Mengukur properti Network
+properti_network <- tibble(jumlah_node = vcount(g), 
+                         jumlah_edge = ecount(g), 
+                         average_path_length = average.path.length(g), 
+                         diameter = diameter(g), 
+                         density = edge_density(g), 
+                         modularity = modularity(cluster_louvain(g)), 
+                         component = count_components(g, mode = "weak")) %>%
+  pivot_longer(everything(), 
+               names_to = "properti", 
+               values_to = "n") %>%
+  mutate(n = round(n, 3))
+
+# Menampilkan hasil pengukuran
+print(properti_network)
+```
+
+# Pengukuran Sentralitas dan Deteksi Komunitas
+
+```{r}
+# Pengukuran Sentralitas dan Deteksi Komunitas
+g_tidy <- as_tbl_graph(g) %>%
+  mutate(degree_centrality = centrality_degree()) %>%
+  mutate(betweenness_centrality = centrality_betweenness()) %>%
+  mutate(eigen_centrality = centrality_eigen()) %>%
+  mutate(modularity = group_louvain())
+```
+
+```{r}
+# Menampilkan hasil pengukuran sentralitas
+g_tidy %>%
+  arrange(desc(degree_centrality)) %>%
+  as_tibble()
+```
+
+# Visualisasi Network
+
+```{r}
+# Memvisualisasikan network
+plot <- g_tidy %>%
+  ggraph(layout = "kk") +
+  geom_edge_arc2(aes(edge_colour = as.factor(node.modularity)),
+    edge_width = 0.3,
+    strength = 1,
+    edge_alpha = 0.3
+  ) +
+  geom_node_point(aes(
+    colour = as.factor(modularity),
+    size = degree_centrality,
+    alpha = 0.8
+  ), position = "identity") +
+  geom_node_text(aes(
+    filter = degree_centrality >= 10,
+    size = degree_centrality,
+    label = name
+  ),
+  alpha = 0.8,
+  check_overlap = F,
+  repel = F
+  ) +
+  scale_size(range = c(1, 7)) +
+  coord_fixed() +
+  theme_graph() +
+  theme(legend.position = "none")
+
+plot
+```
+
+```{r}
+# Menyimpan hasil visualisasi network
+ggsave(plot,
+  filename = "plot/network-dc.png",
+  width = 20,
+  height = 20,
+  dpi = 300,
+  type = "cairo",
+  units = "cm",
+  limitsize = FALSE
+)
+```

@@ -1,0 +1,111 @@
+---
+title: "Financial Network Analysis"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Packages
+install.packages(c("tidyverse", 
+                   "readxl",
+                   "igraph", 
+                   "tidygraph", 
+                   "ggraph"))
+```
+
+# Load Packages
+
+```{r}
+# Load Library
+library(tidyverse)
+library(readxl)
+library(igraph)
+library(tidygraph)
+library(ggraph)
+```
+
+# Load Data
+
+```{r}
+# Load Data
+df <- read_xlsx("data/rtgs-2019.xlsx")
+```
+
+```{r}
+# Melihat 5 baris pertama data
+head(df, 5)
+```
+
+# Membuat Edge List
+
+```{r}
+# Mengubah data ke dalam format network
+edgelist <- df %>%
+  select(`KODE BANK PENGIRIM`, 
+         `KODE BANK COUNTERPARTY`) %>%
+  rename(source = `KODE BANK PENGIRIM`, 
+         target = `KODE BANK COUNTERPARTY`)
+
+
+# Melihat 5 baris pertama data
+head(edgelist, 5)
+```
+
+# Membentuk Network
+
+```{r}
+# Membuat Network
+g <- graph_from_data_frame(edgelist, directed = TRUE)
+```
+
+# Motif
+
+```{r}
+# Nama Motif
+motif <- c(
+  "Motif 1", "Motif 2", "Motif 3",
+  "Motif 4", "Motif 5", "Motif 6",
+  "Motif 7", "Motif 8", "Motif 9",
+  "Motif 10", "Motif 11", "Motif 12",
+  "Motif 13", "Motif 14", "Motif 15", "Motif 16"
+)
+
+# Menghitung motif
+motif_network <- tibble("motif" = factor(motif, 
+                                         levels = motif), 
+                        n = graph.motifs(g, size = 3))
+
+
+# Melihat hasil pengukuran motif
+motif_network
+```
+
+# Visualisasi Distribusi Motif
+
+```{r message=FALSE, warning=FALSE}
+# Visualisasi distribusi Motif
+motif_visualization <- motif_network %>%
+  ggplot(aes(x = motif, y = n, fill = motif)) +
+  geom_col() +
+  labs(x = "", 
+       y = "Jumlah", 
+       fill = "Motif") +
+  theme_minimal() +
+  theme(legend.position = "none") 
+motif_visualization
+```
+
+```{r}
+# Menyimpan hasil visualisasi
+ggsave(motif_visualization,
+       filename = "plot/motif.png",
+       width = 30,
+       height = 20,
+       dpi = 300,
+       type = "cairo",
+       units = "cm",
+       limitsize = FALSE
+)
+```
+

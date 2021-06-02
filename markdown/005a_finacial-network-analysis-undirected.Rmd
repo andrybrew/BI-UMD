@@ -1,0 +1,145 @@
+---
+title: "Financial Network Analysis - Undirected"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Packages
+install.packages(c("tidyverse", 
+                   "readxl",
+                   "igraph", 
+                   "tidygraph", 
+                   "ggraph"))
+```
+
+# Load Packages
+
+```{r}
+# Load Library
+library(tidyverse)
+library(readxl)
+library(igraph)
+library(tidygraph)
+library(ggraph)
+```
+
+# Load Data
+
+```{r}
+# Load Data
+df <- read_xlsx("data/rtgs-2019.xlsx")
+```
+
+```{r}
+# Melihat 5 baris pertama data
+head(df, 5)
+```
+
+# Membuat Edge List
+
+```{r}
+# Menmbuat Edge list
+edgelist <- df %>%
+  select(`KODE BANK PENGIRIM`, 
+         `KODE BANK COUNTERPARTY`) %>%
+  rename(source = `KODE BANK PENGIRIM`, 
+         target = `KODE BANK COUNTERPARTY`)
+
+
+# Melihat 5 baris pertama data
+head(edgelist, 5)
+```
+
+# Membentuk Network
+
+```{r}
+# Membentuk Network
+g <- graph_from_data_frame(edgelist, directed = FALSE)
+```
+
+# Properti Network
+
+```{r}
+# Mengukur properti Network
+properti_network <- tibble(jumlah_node = vcount(g), 
+                         jumlah_edge = ecount(g), 
+                         average_path_length = average.path.length(g), 
+                         diameter = diameter(g), 
+                         density = edge_density(g), 
+                         modularity = modularity(cluster_louvain(g)), 
+                         component = count_components(g, mode = "weak")) %>%
+  pivot_longer(everything(), 
+               names_to = "properti", 
+               values_to = "n") %>%
+  mutate(n = round(n, 3))
+
+# Menampilkan hasil pengukuran
+print(properti_network)
+```
+
+# Pengukuran Sentralitas dan Deteksi Komunitas
+
+```{r}
+# Pengukuran Sentralitas dan Deteksi Komunitas
+g_tidy <- as_tbl_graph(g) %>%
+  mutate(degree_centrality = centrality_degree()) %>%
+  mutate(closeness_centrality = centrality_closeness()) %>%
+  mutate(betweenness_centrality = centrality_betweenness()) %>%
+  mutate(eigen_centrality = centrality_eigen()) %>%
+  mutate(communities = group_louvain()) 
+```
+
+```{r}
+# Menampilkan hasil pengukuran sentralitas
+g_tidy %>%
+  arrange(desc(degree_centrality)) %>%
+  as_tibble()
+```
+
+# Visualisasi Network
+
+```{r}
+# Memvisualisasikan network
+network_visualization <- g_tidy %>%
+  filter(degree_centrality > 100) %>%
+  ggraph(layout = "graphopt") +
+  geom_edge_arc2(aes(edge_colour = as.factor(node.communities)),
+    edge_width = 0.3,
+    strength = 0.8,
+    edge_alpha = 0.4
+  ) +
+  geom_node_point(aes(
+    colour = as.factor(communities),
+    size = degree_centrality,
+    alpha = 0.8
+  ), position = "identity") +
+  geom_node_text(aes(
+    size = degree_centrality,
+    label = name
+  ),
+  alpha = 0.8,
+  check_overlap = T,
+  repel = F
+  ) +
+  scale_size(range = c(0.1, 10)) +
+  theme_graph() +
+  coord_fixed()+
+  theme(legend.position = "none")
+
+network_visualization
+```
+
+```{r}
+# Menyimpan hasil visualisasi
+ggsave(network_visualization,
+  filename = "plot/network.png",
+  width = 30,
+  height = 30,
+  dpi = 300,
+  type = "cairo",
+  units = "cm",
+  limitsize = FALSE
+)
+```

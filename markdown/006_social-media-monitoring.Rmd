@@ -1,0 +1,89 @@
+---
+title: "Social Media Monitoring"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Packages
+install.packages(c("tidyverse",
+                   "tidyquant", 
+                   "robustHD"))
+```
+
+# Load Packages
+
+```{r}
+# Load Library
+library(tidyverse)
+library(tidyquant)
+library(robustHD)
+```
+
+# Load Data
+
+```{r}
+# Load Data
+df <- read_rds("data/tesla-compound.rds")
+```
+
+```{r}
+# Melihat 5 baris pertama data
+head(df)
+```
+
+# Menghitung compund harian
+
+```{r}
+# Menghitung total compound harian. 
+compound <- df %>%
+  group_by(date) %>%
+  mutate(daily_compound = sum(compound, na.rm=TRUE)) %>%
+  select(date, daily_compound) %>%
+  distinct()
+```
+
+# Mengambil Data Saham TSLA
+
+```{r}
+# Mendapatkan harga saham tesla
+tesla_prices  <- tq_get("TSLA", 
+                        get = "stock.prices", 
+                        from = "2021-01-01", 
+                        to   = "2021-04-30")
+tesla_prices
+```
+
+# Merge Data
+
+```{r}
+# Merge Data
+stock <- tesla_prices %>%
+  select(date, close) %>%
+  left_join(compound) %>%
+  mutate(close_st = standardize(close)) %>%
+  mutate(compound_st = standardize(daily_compound))
+```
+
+# Mengukur Korelasi
+
+```{r}
+# Mengukur Korelas
+c <- cor(stock$close, 
+          stock$daily_compound, 
+          method = "pearson")
+c
+```
+
+# Visualisasi
+
+```{r}
+# Visualisasi
+visualize <- ggplot() +
+  geom_line(aes(x = date, y = close_st), colour = "red",  data = stock) +
+  geom_line(aes(x = date, y = compound_st), colour = "blue", data = stock) 
+
+visualize
+```
+

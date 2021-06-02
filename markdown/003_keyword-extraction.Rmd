@@ -1,0 +1,71 @@
+---
+title: "Keyword Extraction"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Packages
+install.packages(c("tidyverse", 
+                   "lubridate", 
+                   "textclean", 
+                   "tidygraph", 
+                   "udpipe"))
+```
+
+# Load Packages
+
+```{r}
+# Load Library
+library(tidyverse)
+library(lubridate)
+library(textclean)
+library(udpipe)
+```
+
+# Load Data
+
+```{r}
+# Load Data
+df <- read_rds("data/tweet_dc.rds") 
+```
+
+# Text Cleaning
+
+```{r}
+# Text Cleaning
+df_clean <- df %>%
+  mutate(created_at = as_date(created_at)) %>%
+  filter(created_at > dmy("25-12-2020")) %>%
+  select(text) %>%
+  mutate(text = strip(text)) %>%
+  mutate(text = replace_emoji(text)) %>%
+  mutate(text = replace_html(text)) %>%
+  mutate(text = replace_hash(text, pattern = "#([A-Za-z0-9_]+)", replacement = "")) %>%
+  mutate(text = replace_tag(text, pattern = "@([A-Za-z0-9_]+)", replacement = ""))
+```
+
+# Download Model
+
+```{r}
+# Download Model
+ud_model <- udpipe_download_model(language = "english", model_dir = "data")
+ud_model <- udpipe_load_model(ud_model$file_model)
+```
+
+# Pos Tagging
+
+```{r}
+# POS Tagging
+annotation <- udpipe_annotate(ud_model, x = df_clean$text) %>%
+  as_tibble()
+```
+
+```{r}
+# Pilih Kata Benda Saja
+noun <- annotation %>%
+  filter(upos == "NOUN")
+
+noun
+```
