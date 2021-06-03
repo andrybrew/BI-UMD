@@ -1,0 +1,36 @@
+---
+title: "Collecting News Data"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Package
+devtools::install_github("mohrosidi/newsR")
+```
+
+# Load Packages
+
+```{r}
+# load package
+library(newsR)
+library(tidyverse)
+```
+
+# Mengambil Berita
+
+```{r}
+# Ambil Seluruh berita terkait Bank Indonesia sebulan terakhir
+news <- news_everything(keyword = "Bank Indonesia", 
+                      get_all = TRUE, 
+                      api_key = "_____")
+```
+
+# Simpan Berita
+
+```{r}
+# Simpan Berita
+write_csv(news, "data/berita.csv")
+```
+

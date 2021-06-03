@@ -1,0 +1,65 @@
+---
+title: "Collecting Twitter Data"
+author: "Muhammad Apriandito"
+---
+
+# Install Packages
+
+```{r}
+# Install Packages
+install.packages(c("rtweet",
+                   "tidyverse"))
+```
+
+# Load Packages
+
+```{r}
+# Load Library
+library(rtweet)
+library(tidyverse)
+```
+
+# Set API
+
+```{r}
+# Auth. (Fill it with your API Key)
+token <- create_token(
+  app = "____",
+  consumer_key = "____",
+  consumer_secret = "____",
+  access_token = "____",
+  access_secret = "____"
+)
+```
+
+# Set Parameter
+
+```{r}
+# Set Parameter
+file_name <- "example"
+keyword <- "example"
+number_of_tweet <- 1000
+language <- "en"
+take_retweet <- FALSE
+```
+
+# Collect Tweet
+
+```{r}
+# Collect Tweet
+tweet <- search_tweets(keyword,
+  n = number_of_tweet,
+  include_rts = take_retweet,
+  lang = language,
+  retryonratelimit = FALSE,
+  token = token
+)
+```
+
+# Simpan Tweet
+
+```{r}
+# Save Data as RDS
+write_csv(tweet, paste0("data/tweet-", file_name, ".csv"))
+```
+
