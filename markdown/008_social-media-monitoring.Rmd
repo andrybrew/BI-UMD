@@ -25,7 +25,7 @@ library(robustHD)
 
 ```{r}
 # Load Data
-df <- read_rds("data/tesla-compound.rds")
+df <- read_rds("data/tesla-compound-sample.rds")
 ```
 
 ```{r}
@@ -42,6 +42,7 @@ compound <- df %>%
   mutate(daily_compound = sum(compound, na.rm=TRUE)) %>%
   select(date, daily_compound) %>%
   distinct()
+compound
 ```
 
 # Mengambil Data Saham TSLA
@@ -51,7 +52,7 @@ compound <- df %>%
 tesla_prices  <- tq_get("TSLA", 
                         get = "stock.prices", 
                         from = "2021-01-01", 
-                        to   = "2021-04-30")
+                        to   = "2021-01-15")
 tesla_prices
 ```
 
